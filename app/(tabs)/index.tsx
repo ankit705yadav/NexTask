@@ -9,134 +9,104 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Keyboard,
   Modal,
   Platform,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { db, auth } from "../../firebaseConfig";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  where,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 
-// Add dueDate to the Task interface
 interface Task {
-  id: string;
+  id: string; // Firestore document ID
   text: string;
   completed: boolean;
-  dueDate?: string; // Stored as 'YYYY-MM-DD'
+  dueDate?: string;
+  userId: string;
 }
 
-const TASKS_STORAGE_KEY = "@todo_app_tasks";
-
 export default function ToDoScreen() {
-  // --- STATE MANAGEMENT ---
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [text, setText] = useState<string>("");
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // State for the Edit Modal
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editedText, setEditedText] = useState("");
-
-  // State for the Due Date Picker
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // State for Filtering
   const [activeFilter, setActiveFilter] = useState("All");
 
-  // --- DATA PERSISTENCE ---
+  // --- REAL-TIME FIRESTORE LISTENER ---
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-        if (storedTasks !== null) setTasks(JSON.parse(storedTasks));
-      } catch (e) {
-        Alert.alert("Error", "Failed to load tasks.");
-      } finally {
-        setIsLoaded(true);
-      }
-    };
-    loadTasks();
-  }, []);
+    const user = auth.currentUser;
+    if (!user) return;
 
-  useEffect(() => {
-    if (isLoaded) {
-      const saveTasks = async () => {
-        try {
-          await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
-        } catch (e) {
-          Alert.alert("Error", "Failed to save tasks.");
-        }
-      };
-      saveTasks();
-    }
-  }, [tasks, isLoaded]);
+    const tasksCollectionRef = collection(db, "tasks");
+    const q = query(tasksCollectionRef, where("userId", "==", user.uid));
 
-  // --- FILTERING LOGIC ---
-  useEffect(() => {
-    let filtered = [...tasks];
-    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-
-    if (activeFilter === "Today") {
-      filtered = filtered.filter((task) => task.dueDate === today);
-    } else if (activeFilter === "Completed") {
-      filtered = filtered.filter((task) => task.completed);
-    }
-
-    // Sort by completion status (incomplete first), then by due date
-    filtered.sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-      return a.dueDate ? -1 : 1;
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const tasksData: Task[] = [];
+      querySnapshot.forEach((doc) => {
+        tasksData.push({ id: doc.id, ...doc.data() } as Task);
+      });
+      setTasks(tasksData);
     });
 
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, []);
+
+  // --- Filtering logic ---
+  useEffect(() => {
+    let filtered = [...tasks];
+    const today = new Date().toISOString().slice(0, 10);
+    if (activeFilter === "Today")
+      filtered = filtered.filter((task) => task.dueDate === today);
+    else if (activeFilter === "Completed")
+      filtered = filtered.filter((task) => task.completed);
+    filtered.sort((a, b) =>
+      a.completed === b.completed ? 0 : a.completed ? 1 : -1,
+    );
     setFilteredTasks(filtered);
   }, [tasks, activeFilter]);
 
-  // --- CORE LOGIC ---
-  const handleAddTask = () => {
-    if (text.trim().length === 0) return;
-    const newTask: Task = {
-      id: Date.now().toString(),
+  // --- FIRESTORE CRUD OPERATIONS ---
+  const handleAddTask = async () => {
+    const user = auth.currentUser;
+    if (text.trim().length === 0 || !user) return;
+
+    await addDoc(collection(db, "tasks"), {
       text: text,
       completed: false,
       dueDate: newDueDate?.toISOString().slice(0, 10),
-    };
-    setTasks([newTask, ...tasks]);
+      userId: user.uid,
+    });
     setText("");
     setNewDueDate(undefined);
-    Keyboard.dismiss();
   };
 
-  const handleToggleTask = (id: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    );
+  const handleToggleTask = async (id: string, currentStatus: boolean) => {
+    const taskDocRef = doc(db, "tasks", id);
+    await updateDoc(taskDocRef, { completed: !currentStatus });
   };
 
-  const handleUpdateTask = () => {
+  const handleUpdateTask = async () => {
     if (!editingTask) return;
-    setTasks(
-      tasks.map((task) =>
-        task.id === editingTask.id ? { ...task, text: editedText } : task,
-      ),
-    );
+    const taskDocRef = doc(db, "tasks", editingTask.id);
+    await updateDoc(taskDocRef, { text: editedText });
     setIsEditModalVisible(false);
-    setEditingTask(null);
   };
 
-  const handleDeleteTask = (id: string) => {
-    Alert.alert("Delete Task", "Are you sure?", [
-      {
-        text: "Delete",
-        onPress: () => setTasks(tasks.filter((task) => task.id !== id)),
-        style: "destructive",
-      },
-      { text: "Cancel", style: "cancel" },
-    ]);
+  const handleDeleteTask = async (id: string) => {
+    const taskDocRef = doc(db, "tasks", id);
+    await deleteDoc(taskDocRef);
   };
 
   const openEditModal = (task: Task) => {
@@ -144,19 +114,24 @@ export default function ToDoScreen() {
     setEditedText(task.text);
     setIsEditModalVisible(true);
   };
-
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setNewDueDate(selectedDate);
-    }
+    if (selectedDate) setNewDueDate(selectedDate);
   };
 
-  // --- RENDER FUNCTIONS ---
   const renderTask = ({ item }: { item: Task }) => (
     <TouchableOpacity
-      onPress={() => handleToggleTask(item.id)}
-      onLongPress={() => handleDeleteTask(item.id)}
+      onPress={() => handleToggleTask(item.id, item.completed)}
+      onLongPress={() =>
+        Alert.alert("Delete Task?", "This action cannot be undone.", [
+          { text: "Cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => handleDeleteTask(item.id),
+          },
+        ])
+      }
       style={
         item.completed
           ? styles.taskContainerCompleted
@@ -190,11 +165,6 @@ export default function ToDoScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Today</Text>
-        </View>
-
-        {/* Filter Bar */}
         <View style={styles.filterContainer}>
           {["All", "Today", "Completed"].map((filter) => (
             <TouchableOpacity
@@ -216,20 +186,18 @@ export default function ToDoScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
         <FlatList
           data={filteredTasks}
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 100 }}
         />
-
         <View style={styles.inputContainer}>
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             style={styles.datePickerButton}
           >
-            <Text style={styles.datePickerButtonText}>📅</Text>
+            <Text>📅</Text>
           </TouchableOpacity>
           <TextInput
             style={styles.input}
@@ -238,30 +206,22 @@ export default function ToDoScreen() {
                 ? `Due: ${newDueDate.toLocaleDateString()}`
                 : "Add a task"
             }
-            placeholderTextColor={colors.onSurfaceVariant}
             value={text}
             onChangeText={setText}
           />
         </View>
       </View>
-
       <TouchableOpacity onPress={handleAddTask} style={styles.fab}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
-
-      {/* Date Picker Component */}
       {showDatePicker && (
         <DateTimePicker
-          testID="dateTimePicker"
           value={newDueDate || new Date()}
           mode="date"
-          is24Hour={true}
           display="default"
           onChange={onDateChange}
         />
       )}
-
-      {/* Edit Task Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -298,7 +258,6 @@ export default function ToDoScreen() {
 }
 
 // --- STYLES ---
-
 const colors = {
   primary: "#0B6A6D",
   onPrimary: "#FFFFFF",
@@ -311,13 +270,9 @@ const colors = {
   outline: "#717878",
   background: "#FBFDFD",
 };
-
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, marginTop: 24, marginBottom: 16 },
-  title: { fontSize: 34, fontWeight: "bold", color: colors.onSurface },
-
+  container: { flex: 1, paddingTop: 20 },
   filterContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -333,7 +288,6 @@ const styles = StyleSheet.create({
   filterButtonActive: { backgroundColor: colors.primary },
   filterButtonText: { color: colors.onSurfaceVariant, fontWeight: "500" },
   filterButtonTextActive: { color: colors.onPrimary },
-
   taskContainerActive: {
     flexDirection: "row",
     alignItems: "center",
@@ -363,10 +317,8 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
   },
   dueDateText: { fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4 },
-
   editButton: { padding: 10, marginLeft: 10 },
   editButtonText: { fontSize: 20, color: colors.onPrimaryContainer },
-
   inputContainer: {
     position: "absolute",
     bottom: 0,
@@ -381,8 +333,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.surfaceVariant,
   },
-  datePickerButton: { padding: 10, marginRight: 10 },
-  datePickerButtonText: { fontSize: 24 },
+  datePickerButton: { padding: 10 },
   input: {
     flex: 1,
     backgroundColor: colors.surfaceVariant,
@@ -392,7 +343,6 @@ const styles = StyleSheet.create({
     height: 56,
     color: colors.onSurface,
   },
-
   fab: {
     position: "absolute",
     bottom: 90,
@@ -404,13 +354,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   fabIcon: { color: colors.onPrimary, fontSize: 32, lineHeight: 32 },
-
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -434,11 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
   },
-  modalButtonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
+  modalButtonContainer: { flexDirection: "row" },
   modalButton: {
     padding: 10,
     borderRadius: 10,

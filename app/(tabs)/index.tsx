@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,8 +8,10 @@ import {
   FlatList,
   SafeAreaView,
   StatusBar,
+  Alert,
   Keyboard,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Task {
   id: string;
@@ -17,9 +19,41 @@ interface Task {
   completed: boolean;
 }
 
+const TASKS_STORAGE_KEY = "@todo_app_tasks";
+
 export default function ToDoScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [text, setText] = useState<string>("");
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load tasks from storage
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+        if (storedTasks !== null) setTasks(JSON.parse(storedTasks));
+      } catch (e) {
+        Alert.alert("Error", "Failed to load tasks.");
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    loadTasks();
+  }, []);
+
+  // Save tasks to storage
+  useEffect(() => {
+    if (isLoaded) {
+      const saveTasks = async () => {
+        try {
+          await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+        } catch (e) {
+          Alert.alert("Error", "Failed to save tasks.");
+        }
+      };
+      saveTasks();
+    }
+  }, [tasks, isLoaded]);
 
   const handleAddTask = () => {
     if (text.trim().length === 0) return;
@@ -33,10 +67,43 @@ export default function ToDoScreen() {
     Keyboard.dismiss();
   };
 
+  const handleToggleTask = (id: string) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task,
+      ),
+    );
+  };
+
+  const handleDeleteTask = (id: string) => {
+    Alert.alert("Delete Task", "Are you sure?", [
+      {
+        text: "Delete",
+        onPress: () => setTasks(tasks.filter((task) => task.id !== id)),
+        style: "destructive",
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const renderTask = ({ item }: { item: Task }) => (
-    <View style={styles.taskContainerActive}>
-      <Text style={styles.taskTextActive}>{item.text}</Text>
-    </View>
+    <TouchableOpacity
+      onPress={() => handleToggleTask(item.id)}
+      onLongPress={() => handleDeleteTask(item.id)}
+      style={
+        item.completed
+          ? styles.taskContainerCompleted
+          : styles.taskContainerActive
+      }
+    >
+      <Text
+        style={
+          item.completed ? styles.taskTextCompleted : styles.taskTextActive
+        }
+      >
+        {item.text}
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
@@ -91,7 +158,18 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, marginTop: 24, marginBottom: 16 },
   title: { fontSize: 34, fontWeight: "bold", color: colors.onSurface },
   taskContainerActive: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.primaryContainer,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 20,
+    borderRadius: 28,
+  },
+  taskContainerCompleted: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surfaceVariant,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 20,
@@ -101,6 +179,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     color: colors.onPrimaryContainer,
+  },
+  taskTextCompleted: {
+    fontSize: 18,
+    color: colors.onSurfaceVariant,
+    textDecorationLine: "line-through",
   },
   inputContainer: {
     position: "absolute",

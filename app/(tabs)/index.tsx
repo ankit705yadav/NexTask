@@ -27,15 +27,25 @@ interface Task {
 const TASKS_STORAGE_KEY = "@todo_app_tasks";
 
 export default function ToDoScreen() {
+  // --- STATE MANAGEMENT ---
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [text, setText] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // State for the Edit Modal
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editedText, setEditedText] = useState("");
+
+  // State for the Due Date Picker
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // State for Filtering
+  const [activeFilter, setActiveFilter] = useState("All");
+
+  // --- DATA PERSISTENCE ---
   useEffect(() => {
     const loadTasks = async () => {
       try {
@@ -63,6 +73,28 @@ export default function ToDoScreen() {
     }
   }, [tasks, isLoaded]);
 
+  // --- FILTERING LOGIC ---
+  useEffect(() => {
+    let filtered = [...tasks];
+    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+    if (activeFilter === "Today") {
+      filtered = filtered.filter((task) => task.dueDate === today);
+    } else if (activeFilter === "Completed") {
+      filtered = filtered.filter((task) => task.completed);
+    }
+
+    // Sort by completion status (incomplete first), then by due date
+    filtered.sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      return a.dueDate ? -1 : 1;
+    });
+
+    setFilteredTasks(filtered);
+  }, [tasks, activeFilter]);
+
+  // --- CORE LOGIC ---
   const handleAddTask = () => {
     if (text.trim().length === 0) return;
     const newTask: Task = {
@@ -120,6 +152,7 @@ export default function ToDoScreen() {
     }
   };
 
+  // --- RENDER FUNCTIONS ---
   const renderTask = ({ item }: { item: Task }) => (
     <TouchableOpacity
       onPress={() => handleToggleTask(item.id)}
@@ -161,8 +194,31 @@ export default function ToDoScreen() {
           <Text style={styles.title}>Today</Text>
         </View>
 
+        {/* Filter Bar */}
+        <View style={styles.filterContainer}>
+          {["All", "Today", "Completed"].map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              onPress={() => setActiveFilter(filter)}
+              style={[
+                styles.filterButton,
+                activeFilter === filter && styles.filterButtonActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  activeFilter === filter && styles.filterButtonTextActive,
+                ]}
+              >
+                {filter}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <FlatList
-          data={tasks}
+          data={filteredTasks}
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -193,6 +249,7 @@ export default function ToDoScreen() {
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
 
+      {/* Date Picker Component */}
       {showDatePicker && (
         <DateTimePicker
           testID="dateTimePicker"
@@ -204,6 +261,7 @@ export default function ToDoScreen() {
         />
       )}
 
+      {/* Edit Task Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -239,6 +297,8 @@ export default function ToDoScreen() {
   );
 }
 
+// --- STYLES ---
+
 const colors = {
   primary: "#0B6A6D",
   onPrimary: "#FFFFFF",
@@ -257,6 +317,23 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, marginTop: 24, marginBottom: 16 },
   title: { fontSize: 34, fontWeight: "bold", color: colors.onSurface },
+
+  filterContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceVariant,
+  },
+  filterButtonActive: { backgroundColor: colors.primary },
+  filterButtonText: { color: colors.onSurfaceVariant, fontWeight: "500" },
+  filterButtonTextActive: { color: colors.onPrimary },
+
   taskContainerActive: {
     flexDirection: "row",
     alignItems: "center",
@@ -286,8 +363,10 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
   },
   dueDateText: { fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4 },
+
   editButton: { padding: 10, marginLeft: 10 },
   editButtonText: { fontSize: 20, color: colors.onPrimaryContainer },
+
   inputContainer: {
     position: "absolute",
     bottom: 0,
@@ -313,6 +392,7 @@ const styles = StyleSheet.create({
     height: 56,
     color: colors.onSurface,
   },
+
   fab: {
     position: "absolute",
     bottom: 90,
@@ -330,6 +410,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   fabIcon: { color: colors.onPrimary, fontSize: 32, lineHeight: 32 },
+
   modalContainer: {
     flex: 1,
     justifyContent: "center",

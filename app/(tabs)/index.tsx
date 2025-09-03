@@ -1,75 +1,145 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  SafeAreaView,
+  StatusBar,
+  Keyboard,
+} from "react-native";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+}
 
-export default function HomeScreen() {
+export default function ToDoScreen() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [text, setText] = useState<string>("");
+
+  const handleAddTask = () => {
+    if (text.trim().length === 0) return;
+    const newTask: Task = {
+      id: Date.now().toString(),
+      text: text,
+      completed: false,
+    };
+    setTasks([newTask, ...tasks]);
+    setText("");
+    Keyboard.dismiss();
+  };
+
+  const renderTask = ({ item }: { item: Task }) => (
+    <View style={styles.taskContainerActive}>
+      <Text style={styles.taskTextActive}>{item.text}</Text>
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Today</Text>
+        </View>
+
+        <FlatList
+          data={tasks}
+          renderItem={renderTask}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 100 }}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Add a task"
+            placeholderTextColor={colors.onSurfaceVariant}
+            value={text}
+            onChangeText={setText}
+          />
+        </View>
+      </View>
+
+      <TouchableOpacity onPress={handleAddTask} style={styles.fab}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
+const colors = {
+  primary: "#0B6A6D",
+  onPrimary: "#FFFFFF",
+  primaryContainer: "#A2F2F4",
+  onPrimaryContainer: "#002021",
+  surface: "#FBFDFD",
+  surfaceVariant: "#E2E3E3",
+  onSurface: "#191C1C",
+  onSurfaceVariant: "#414848",
+  outline: "#717878",
+  background: "#FBFDFD",
+};
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, marginTop: 24, marginBottom: 16 },
+  title: { fontSize: 34, fontWeight: "bold", color: colors.onSurface },
+  taskContainerActive: {
+    backgroundColor: colors.primaryContainer,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 20,
+    borderRadius: 28,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  taskTextActive: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: colors.onPrimaryContainer,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
+  inputContainer: {
+    position: "absolute",
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceVariant,
   },
+  input: {
+    flex: 1,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    fontSize: 18,
+    height: 56,
+    color: colors.onSurface,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 90,
+    right: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  fabIcon: { color: colors.onPrimary, fontSize: 32, lineHeight: 32 },
 });

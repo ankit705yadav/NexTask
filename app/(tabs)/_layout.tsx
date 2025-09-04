@@ -8,7 +8,11 @@ export default function TabLayout() {
   };
 
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        tabBarStyle: { display: "none" },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{

@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
-import { TouchableOpacity, Text } from "react-native";
+import { TouchableOpacity } from "react-native";
 import { auth } from "../../firebaseConfig_temp";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function TabLayout() {
   const handleLogout = () => {
@@ -22,7 +23,7 @@ export default function TabLayout() {
               onPress={handleLogout}
               style={{ marginRight: 15 }}
             >
-              <Text style={{ color: "#0B6A6D", fontSize: 16 }}>Logout</Text>
+              <MaterialIcons name="logout" size={24} color="black" />
             </TouchableOpacity>
           ),
         }}

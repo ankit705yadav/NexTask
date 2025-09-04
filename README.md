@@ -9,7 +9,8 @@ The app features **secure user authentication**, **real-time cloud synchronizati
 
 ## 📱 App Preview
 <p align="center">
-<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record.gif?raw=true" alt="NexTask App Demo" width="300"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record_1.gif?raw=true" alt="NexTask App Demo" width="300"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record_2.gif?raw=true" alt="NexTask App Demo" width="300"/>
 </p>
 <p align="center">
 <img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_1.png?raw=true" alt="Login Screen" width="250"/>

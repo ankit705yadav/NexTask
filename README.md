@@ -8,7 +8,18 @@ The app features **secure user authentication**, **real-time cloud synchronizati
 ---
 
 ## 📱 App Preview
-*(A preview of the main task screen and the "Add Task" modal)*
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record.gif?raw=true" alt="NexTask App Demo" width="300"/>
+</p>
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_1.png?raw=true" alt="Login Screen" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_2.png?raw=true" alt="Sign up Screen" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_3.png?raw=true" alt="Main Task Screen" width="250"/>
+</p>
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_4.png?raw=true" alt="Add Task Modal" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_5.png?raw=true" alt="Edit Task Modal" width="250"/>
+</p>
 
 ---
 

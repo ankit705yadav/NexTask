@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,8 @@ import {
   Alert,
   Modal,
   Platform,
+  KeyboardAvoidingView,
+  Pressable,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth } from "../../firebaseConfig_temp";
@@ -43,15 +45,14 @@ export default function ToDoScreen() {
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
+  const [isAddTaskSheetVisible, setIsAddTaskSheetVisible] = useState(false);
+  const addTaskInputRef = useRef<TextInput>(null);
 
-  // --- REAL-TIME FIRESTORE LISTENER ---
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
-
     const tasksCollectionRef = collection(db, "tasks");
     const q = query(tasksCollectionRef, where("userId", "==", user.uid));
-
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const tasksData: Task[] = [];
       querySnapshot.forEach((doc) => {
@@ -59,11 +60,9 @@ export default function ToDoScreen() {
       });
       setTasks(tasksData);
     });
-
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
-  // --- Filtering logic ---
   useEffect(() => {
     let filtered = [...tasks];
     const today = new Date().toISOString().slice(0, 10);
@@ -77,11 +76,21 @@ export default function ToDoScreen() {
     setFilteredTasks(filtered);
   }, [tasks, activeFilter]);
 
-  // --- FIRESTORE CRUD OPERATIONS ---
+  // Effect to focus the input when the bottom sheet opens
+  useEffect(() => {
+    if (isAddTaskSheetVisible) {
+      setTimeout(() => {
+        addTaskInputRef.current?.focus();
+      }, 100); // Small delay to allow modal animation to finish
+    }
+  }, [isAddTaskSheetVisible]);
+
   const handleAddTask = async () => {
     const user = auth.currentUser;
-    if (text.trim().length === 0 || !user) return;
-
+    if (text.trim().length === 0 || !user) {
+      setIsAddTaskSheetVisible(false);
+      return;
+    }
     await addDoc(collection(db, "tasks"), {
       text: text,
       completed: false,
@@ -90,6 +99,7 @@ export default function ToDoScreen() {
     });
     setText("");
     setNewDueDate(undefined);
+    setIsAddTaskSheetVisible(false);
   };
 
   const handleToggleTask = async (id: string, currentStatus: boolean) => {
@@ -115,8 +125,10 @@ export default function ToDoScreen() {
     setIsEditModalVisible(true);
   };
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === "ios");
-    if (selectedDate) setNewDueDate(selectedDate);
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setNewDueDate(selectedDate);
+    }
   };
 
   const renderTask = ({ item }: { item: Task }) => (
@@ -192,36 +204,70 @@ export default function ToDoScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 100 }}
         />
-        <View style={styles.inputContainer}>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.datePickerButton}
-          >
-            <Text>📅</Text>
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder={
-              newDueDate
-                ? `Due: ${newDueDate.toLocaleDateString()}`
-                : "Add a task"
-            }
-            value={text}
-            onChangeText={setText}
-          />
-        </View>
+
+        <TouchableOpacity
+          onPress={() => setIsAddTaskSheetVisible(true)}
+          style={styles.fab}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={handleAddTask} style={styles.fab}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+
       {showDatePicker && (
         <DateTimePicker
           value={newDueDate || new Date()}
           mode="date"
-          display="default"
+          display="spinner"
           onChange={onDateChange}
         />
       )}
+
+      {/* Add Task Bottom Sheet */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isAddTaskSheetVisible}
+        onRequestClose={() => setIsAddTaskSheetVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <Pressable
+            style={styles.sheetBackdrop}
+            onPress={() => setIsAddTaskSheetVisible(false)}
+          />
+          <View style={styles.sheetContainer}>
+            <TextInput
+              ref={addTaskInputRef}
+              style={styles.sheetInput}
+              placeholder="New task"
+              placeholderTextColor={colors.onSurfaceVariant}
+              value={text}
+              onChangeText={setText}
+            />
+            <View style={styles.sheetActions}>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <Text style={styles.sheetIcon}>🗓️</Text>
+              </TouchableOpacity>
+              {newDueDate && (
+                <Text style={styles.dueDateTextSheet}>
+                  {" "}
+                  {newDueDate.toLocaleDateString()}
+                </Text>
+              )}
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleAddTask}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Edit Task Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -257,7 +303,6 @@ export default function ToDoScreen() {
   );
 }
 
-// --- STYLES ---
 const colors = {
   primary: "#0B6A6D",
   onPrimary: "#FFFFFF",
@@ -270,6 +315,7 @@ const colors = {
   outline: "#717878",
   background: "#FBFDFD",
 };
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, paddingTop: 20 },
@@ -319,43 +365,49 @@ const styles = StyleSheet.create({
   dueDateText: { fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4 },
   editButton: { padding: 10, marginLeft: 10 },
   editButtonText: { fontSize: 20, color: colors.onPrimaryContainer },
-  inputContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceVariant,
-  },
-  datePickerButton: { padding: 10 },
-  input: {
-    flex: 1,
-    backgroundColor: colors.surfaceVariant,
-    borderRadius: 28,
-    paddingHorizontal: 24,
-    fontSize: 18,
-    height: 56,
-    color: colors.onSurface,
-  },
   fab: {
     position: "absolute",
-    bottom: 90,
+    bottom: 30,
     right: 20,
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: 32,
     backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
   },
   fabIcon: { color: colors.onPrimary, fontSize: 32, lineHeight: 32 },
+
+  // Add Task Sheet Styles
+  sheetBackdrop: { flex: 1 },
+  sheetContainer: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    borderTopWidth: 1,
+    borderColor: colors.surfaceVariant,
+    paddingBottom: 64,
+  },
+  sheetInput: { color: colors.onSurface, fontSize: 18, paddingVertical: 12 },
+  sheetActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  sheetIcon: { fontSize: 24 },
+  dueDateTextSheet: { color: colors.primary, marginLeft: 8, fontWeight: "500" },
+  saveButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  saveButtonText: { color: colors.onPrimary, fontWeight: "bold", fontSize: 16 },
+
+  // Edit Task Modal Styles
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -369,7 +421,12 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 20 },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: colors.onSurface,
+  },
   modalInput: {
     width: "100%",
     borderWidth: 1,
@@ -386,6 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     marginHorizontal: 5,
+    backgroundColor: colors.surfaceVariant,
   },
   modalSaveButton: { backgroundColor: colors.primary },
   modalSaveButtonText: { color: colors.onPrimary },

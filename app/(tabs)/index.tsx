@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
-  Text,
   View,
-  TextInput,
-  TouchableOpacity,
   FlatList,
   SafeAreaView,
   StatusBar,
-  Alert,
-  Modal,
   Platform,
   KeyboardAvoidingView,
-  Pressable,
 } from "react-native";
+import {
+  Checkbox,
+  Text,
+  Button,
+  TextInput,
+  FAB,
+  Dialog,
+  Portal,
+  SegmentedButtons,
+  Provider as PaperProvider,
+  TouchableRipple,
+  Modal,
+  IconButton,
+} from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth } from "../../firebaseConfig_temp";
 import {
@@ -33,20 +41,39 @@ interface Task {
   completed: boolean;
   dueDate?: string;
   userId: string;
+  details?: string;
 }
 
 export default function ToDoScreen() {
+  return (
+    <PaperProvider>
+      <ToDoComponent />
+    </PaperProvider>
+  );
+}
+
+function ToDoComponent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [text, setText] = useState<string>("");
+  const [details, setDetails] = useState<string>("");
+
+  // --- Edit Modal State ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editedText, setEditedText] = useState("");
+  const [editedDetails, setEditedDetails] = useState(""); // New state for details
+
+  // --- Delete Dialog State ---
+  const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+
+  // --- Add Task Modal State ---
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [isAddTaskSheetVisible, setIsAddTaskSheetVisible] = useState(false);
-  const addTaskInputRef = useRef<TextInput>(null);
+  const addTaskInputRef = useRef<any>(null);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -76,12 +103,11 @@ export default function ToDoScreen() {
     setFilteredTasks(filtered);
   }, [tasks, activeFilter]);
 
-  // Effect to focus the input when the bottom sheet opens
   useEffect(() => {
     if (isAddTaskSheetVisible) {
       setTimeout(() => {
         addTaskInputRef.current?.focus();
-      }, 100); // Small delay to allow modal animation to finish
+      }, 100);
     }
   }, [isAddTaskSheetVisible]);
 
@@ -96,8 +122,10 @@ export default function ToDoScreen() {
       completed: false,
       dueDate: newDueDate?.toISOString().slice(0, 10),
       userId: user.uid,
+      details: details,
     });
     setText("");
+    setDetails("");
     setNewDueDate(undefined);
     setIsAddTaskSheetVisible(false);
   };
@@ -110,20 +138,33 @@ export default function ToDoScreen() {
   const handleUpdateTask = async () => {
     if (!editingTask) return;
     const taskDocRef = doc(db, "tasks", editingTask.id);
-    await updateDoc(taskDocRef, { text: editedText });
+    await updateDoc(taskDocRef, {
+      text: editedText,
+      details: editedDetails, // Save details on update
+    });
     setIsEditModalVisible(false);
   };
 
-  const handleDeleteTask = async (id: string) => {
-    const taskDocRef = doc(db, "tasks", id);
+  const handleDeleteTask = async () => {
+    if (!deletingTaskId) return;
+    const taskDocRef = doc(db, "tasks", deletingTaskId);
     await deleteDoc(taskDocRef);
+    setIsDeleteDialogVisible(false);
+    setDeletingTaskId(null);
   };
 
-  const openEditModal = (task: Task) => {
+  const showEditModal = (task: Task) => {
     setEditingTask(task);
     setEditedText(task.text);
+    setEditedDetails(task.details || ""); // Populate details, handle if undefined
     setIsEditModalVisible(true);
   };
+
+  const showDeleteDialog = (id: string) => {
+    setDeletingTaskId(id);
+    setIsDeleteDialogVisible(true);
+  };
+
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
@@ -131,86 +172,74 @@ export default function ToDoScreen() {
     }
   };
 
+  const handleOpenAddTaskSheet = () => {
+    setNewDueDate(new Date());
+    setIsAddTaskSheetVisible(true);
+  };
+
   const renderTask = ({ item }: { item: Task }) => (
-    <TouchableOpacity
-      onPress={() => handleToggleTask(item.id, item.completed)}
-      onLongPress={() =>
-        Alert.alert("Delete Task?", "This action cannot be undone.", [
-          { text: "Cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => handleDeleteTask(item.id),
-          },
-        ])
-      }
+    <TouchableRipple
+      onPress={() => showEditModal(item)} // Changed to showEditModal
       style={
         item.completed
           ? styles.taskContainerCompleted
           : styles.taskContainerActive
       }
     >
-      <View style={{ flex: 1 }}>
-        <Text
-          style={
-            item.completed ? styles.taskTextCompleted : styles.taskTextActive
-          }
-        >
-          {item.text}
-        </Text>
-        {item.dueDate && (
-          <Text style={styles.dueDateText}>
-            Due: {new Date(item.dueDate + "T00:00:00").toLocaleDateString()}
+      <View style={styles.taskContent}>
+        <Checkbox
+          status={item.completed ? "checked" : "unchecked"}
+          onPress={() => handleToggleTask(item.id, item.completed)}
+          color={colors.primary}
+        />
+        <View style={styles.taskTextContainer}>
+          <Text
+            variant="bodyLarge"
+            style={
+              item.completed ? styles.taskTextCompleted : styles.taskTextActive
+            }
+          >
+            {item.text}
           </Text>
-        )}
+          {item.details && (
+            <Text style={styles.detailsText}>{item.details}</Text>
+          )}
+          {item.dueDate && (
+            <Text style={styles.dueDateText}>
+              Due: {new Date(item.dueDate + "T00:00:00").toLocaleDateString()}
+            </Text>
+          )}
+        </View>
+        <IconButton
+          icon="delete-outline"
+          iconColor={colors.onSurfaceVariant}
+          onPress={() => showDeleteDialog(item.id)}
+        />
       </View>
-      <TouchableOpacity
-        onPress={() => openEditModal(item)}
-        style={styles.editButton}
-      >
-        <Text style={styles.editButtonText}>✎</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
+    </TouchableRipple>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.container}>
-        <View style={styles.filterContainer}>
-          {["All", "Today", "Completed"].map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              onPress={() => setActiveFilter(filter)}
-              style={[
-                styles.filterButton,
-                activeFilter === filter && styles.filterButtonActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  activeFilter === filter && styles.filterButtonTextActive,
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <SegmentedButtons
+          value={activeFilter}
+          onValueChange={setActiveFilter}
+          style={styles.filterContainer}
+          buttons={[
+            { value: "All", label: "All" },
+            { value: "Today", label: "Today" },
+            { value: "Completed", label: "Completed" },
+          ]}
+        />
         <FlatList
           data={filteredTasks}
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 100 }}
         />
-
-        <TouchableOpacity
-          onPress={() => setIsAddTaskSheetVisible(true)}
-          style={styles.fab}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+        <FAB icon="plus" style={styles.fab} onPress={handleOpenAddTaskSheet} />
       </View>
 
       {showDatePicker && (
@@ -222,82 +251,121 @@ export default function ToDoScreen() {
         />
       )}
 
-      {/* Add Task Bottom Sheet */}
+      <Portal>
+        {/* Delete Dialog remains the same */}
+        <Dialog
+          visible={isDeleteDialogVisible}
+          onDismiss={() => setIsDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Delete Task?</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">This action cannot be undone.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setIsDeleteDialogVisible(false)}>
+              Cancel
+            </Button>
+            <Button onPress={handleDeleteTask} textColor={colors.error}>
+              Delete
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Edit Task Modal (New) */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isAddTaskSheetVisible}
-        onRequestClose={() => setIsAddTaskSheetVisible(false)}
+        visible={isEditModalVisible}
+        onDismiss={() => setIsEditModalVisible(false)}
+        contentContainerStyle={styles.sheetContainer}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
         >
-          <Pressable
-            style={styles.sheetBackdrop}
-            onPress={() => setIsAddTaskSheetVisible(false)}
+          <Text variant="headlineSmall" style={styles.modalTitle}>
+            Edit Task
+          </Text>
+          <TextInput
+            label="Task Name"
+            value={editedText}
+            onChangeText={setEditedText}
+            mode="outlined"
+            style={styles.sheetInput}
           />
-          <View style={styles.sheetContainer}>
-            <TextInput
-              ref={addTaskInputRef}
-              style={styles.sheetInput}
-              placeholder="New task"
-              placeholderTextColor={colors.onSurfaceVariant}
-              value={text}
-              onChangeText={setText}
-            />
-            <View style={styles.sheetActions}>
-              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.sheetIcon}>🗓️</Text>
-              </TouchableOpacity>
-              {newDueDate && (
-                <Text style={styles.dueDateTextSheet}>
-                  {" "}
-                  {newDueDate.toLocaleDateString()}
-                </Text>
-              )}
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleAddTask}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+          <TextInput
+            label="Details (optional)"
+            value={editedDetails}
+            onChangeText={setEditedDetails}
+            mode="outlined"
+            style={styles.sheetInput}
+            multiline
+            numberOfLines={3}
+          />
+          <View style={styles.modalActions}>
+            <Button
+              onPress={() => setIsEditModalVisible(false)}
+              style={{ flex: 1 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleUpdateTask}
+              style={{ flex: 1, marginLeft: 8 }}
+            >
+              Save Changes
+            </Button>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Edit Task Modal */}
+      {/* Add Task Modal */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isEditModalVisible}
-        onRequestClose={() => setIsEditModalVisible(false)}
+        visible={isAddTaskSheetVisible}
+        onDismiss={() => setIsAddTaskSheetVisible(false)}
+        contentContainerStyle={styles.sheetContainer}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Task</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editedText}
-              onChangeText={setEditedText}
-            />
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => setIsEditModalVisible(false)}
-              >
-                <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalSaveButton]}
-                onPress={handleUpdateTask}
-              >
-                <Text style={styles.modalSaveButtonText}>Save</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TextInput
+            ref={addTaskInputRef}
+            label="New task"
+            value={text}
+            onChangeText={setText}
+            mode="outlined"
+            style={styles.sheetInput}
+          />
+          <TextInput
+            label="Details (optional)"
+            value={details}
+            onChangeText={setDetails}
+            mode="outlined"
+            style={styles.sheetInput}
+            multiline
+            numberOfLines={3}
+          />
+          <View style={styles.sheetActions}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <IconButton
+                icon="calendar"
+                size={24}
+                onPress={() => setShowDatePicker(true)}
+              />
+              {newDueDate && (
+                <Text style={styles.dueDateTextSheet}>
+                  {newDueDate.toLocaleDateString()}
+                </Text>
+              )}
             </View>
+            <Button
+              mode="contained"
+              onPress={handleAddTask}
+              style={styles.saveButton}
+            >
+              Save
+            </Button>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -314,137 +382,90 @@ const colors = {
   onSurfaceVariant: "#414848",
   outline: "#717878",
   background: "#FBFDFD",
+  error: "#BA1A1A",
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, paddingTop: 20 },
   filterContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
     paddingHorizontal: 20,
     marginBottom: 16,
   },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceVariant,
-  },
-  filterButtonActive: { backgroundColor: colors.primary },
-  filterButtonText: { color: colors.onSurfaceVariant, fontWeight: "500" },
-  filterButtonTextActive: { color: colors.onPrimary },
   taskContainerActive: {
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: colors.primaryContainer,
     marginHorizontal: 20,
     marginBottom: 12,
-    padding: 20,
     borderRadius: 28,
   },
   taskContainerCompleted: {
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: colors.surfaceVariant,
     marginHorizontal: 20,
     marginBottom: 12,
-    padding: 20,
     borderRadius: 28,
   },
+  taskContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+  },
+  taskTextContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
   taskTextActive: {
-    fontSize: 18,
     fontWeight: "500",
     color: colors.onPrimaryContainer,
   },
   taskTextCompleted: {
-    fontSize: 18,
     color: colors.onSurfaceVariant,
     textDecorationLine: "line-through",
   },
   dueDateText: { fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4 },
-  editButton: { padding: 10, marginLeft: 10 },
-  editButtonText: { fontSize: 20, color: colors.onPrimaryContainer },
+  detailsText: {
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+    marginTop: 6,
+    fontStyle: "italic",
+  },
   fab: {
     position: "absolute",
-    bottom: 30,
+    margin: 16,
     right: 20,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 4,
+    bottom: 20,
   },
-  fabIcon: { color: colors.onPrimary, fontSize: 32, lineHeight: 32 },
-
-  // Add Task Sheet Styles
-  sheetBackdrop: { flex: 1 },
   sheetContainer: {
+    marginBottom: 250,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
     padding: 20,
-    borderTopWidth: 1,
-    borderColor: colors.surfaceVariant,
-    paddingBottom: 64,
+    borderRadius: 16,
+    margin: 20,
   },
-  sheetInput: { color: colors.onSurface, fontSize: 18, paddingVertical: 12 },
+  sheetInput: {
+    marginBottom: 16,
+    backgroundColor: colors.background,
+  },
   sheetActions: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 16,
   },
-  sheetIcon: { fontSize: 24 },
-  dueDateTextSheet: { color: colors.primary, marginLeft: 8, fontWeight: "500" },
+  dueDateTextSheet: {
+    color: colors.primary,
+    marginLeft: 8,
+    fontWeight: "500",
+  },
   saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
     borderRadius: 20,
-  },
-  saveButtonText: { color: colors.onPrimary, fontWeight: "bold", fontSize: 16 },
-
-  // Edit Task Modal Styles
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
     marginBottom: 20,
-    color: colors.onSurface,
+    textAlign: "center",
   },
-  modalInput: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-    fontSize: 16,
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
   },
-  modalButtonContainer: { flexDirection: "row" },
-  modalButton: {
-    padding: 10,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: "center",
-    marginHorizontal: 5,
-    backgroundColor: colors.surfaceVariant,
-  },
-  modalSaveButton: { backgroundColor: colors.primary },
-  modalSaveButtonText: { color: colors.onPrimary },
 });

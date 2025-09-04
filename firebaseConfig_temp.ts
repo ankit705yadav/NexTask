@@ -1,3 +1,4 @@
+// The Firebase project linked in the configuration is temporary and will be deleted once the review of this assignment is complete.
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";

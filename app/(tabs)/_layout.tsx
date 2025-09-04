@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { TouchableOpacity, Text } from "react-native";
-import { auth } from "../../firebaseConfig";
+import { auth } from "../../firebaseConfig_temp";
 
 export default function TabLayout() {
   const handleLogout = () => {

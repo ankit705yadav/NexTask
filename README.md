@@ -1,50 +1,91 @@
-# Welcome to your Expo app 👋
+NexTask To-Do App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native To-Do application built for the Nexeed Internship Assignment.
 
-## Get started
+This is a complete mobile application that allows users to manage their daily tasks with a clean, modern, and minimalist dark-themed interface. The app features user authentication and real-time cloud synchronization, ensuring a seamless experience across devices.
+App Preview
+Note:PleaseaddaGIForafewscreenshotsofyourfinalapplicationhere.Thisisagreatwaytoshowcaseyourworkataglance.
+Features
 
-1. Install dependencies
+This project successfully implements all core requirements and several bonus features from the assignment brief.
+Core Features
 
-   ```bash
-   npm install
-   ```
+    ✅ User Authentication: Secure sign-up and login using email and password.
 
-2. Start the app
+    ✅ Create Tasks: Easily add new tasks via a simple input.
 
-   ```bash
-   npx expo start
-   ```
+    ✅ View Tasks: A clean, filterable list of all user-specific tasks.
 
-In the output, you'll find options to open the app in a
+    ✅ Complete Tasks: Mark tasks as complete with a single tap.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+    ✅ Delete Tasks: Remove tasks permanently.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Bonus Features
 
-## Get a fresh project
+    ✅ Cloud Sync with Firestore: All tasks are synced in real-time across devices using a secure Firebase Firestore backend.
 
-When you're ready, run:
+    ✅ Edit Tasks: An intuitive modal allows users to edit the text of an existing task.
 
-```bash
-npm run reset-project
-```
+    ✅ Due Dates: Users can assign an optional due date when creating a task.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+    ✅ Task Filtering: The main list can be filtered to show "All", "Today's", or "Completed" tasks.
 
-## Learn more
+Technical Choices & Justification
 
-To learn more about developing your project with Expo, look at the following resources:
+This project was built with a focus on modern, efficient, and scalable technologies.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+    Framework: Expo CLI
 
-## Join the community
+        Why? I chose Expo's managed workflow to accelerate the initial setup and build process. It abstracts away complex native configurations, allowing for a stronger focus on feature development and UI/UX. The inclusion of Expo Router provided a modern, file-based routing system that is intuitive and easy to manage.
 
-Join our community of developers creating universal apps.
+    Backend & Database: Firebase (Authentication & Firestore)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+        Why? Firebase was the ideal choice for a backend-as-a-service. Its seamless integration with React Native for both Authentication and a real-time Firestore database met the "Cloud Sync" requirement perfectly. The onSnapshot listener in Firestore provides an excellent real-time user experience out of the box, and the security rules ensure that user data is properly protected.
+
+    UI/UX: Minimalist Dark Theme
+
+        Why? To create a polished and user-friendly interface, I implemented a minimalist dark theme. This design choice reduces eye strain, improves focus on content, and provides a modern, professional aesthetic. The use of a simple color palette with a clear accent color for interactive elements creates an intuitive and pleasant user experience.
+
+    State Management: React Hooks (useState, useEffect)
+
+        Why? For an application of this scale, React's built-in hooks are both sufficient and highly efficient. Using useState for local component state and useEffect to manage side effects (like the real-time Firestore listener) keeps the codebase clean, readable, and free of unnecessary boilerplate from larger state management libraries like Redux.
+
+Setup and Run Instructions
+
+Follow these steps to get the project running on your local machine.
+Prerequisites
+
+    Node.js (LTS version)
+
+    Expo CLI: npm install -g expo-cli
+
+    Expo Go App: Installed on your iOS or Android device.
+
+1. Clone the Repository
+
+git clone [YOUR_REPOSITORY_URL]
+cd nex-task-app
+
+2. Install Dependencies
+
+npm install
+
+3. Firebase Configuration
+
+For convenience during the review process, the Firebase configuration file (firebaseConfig.ts) is included in this repository. You can skip the manual setup and proceed directly to running the application.
+
+A Note on Security and Configuration
+
+    For the convenience of the assignment review process, the firebaseConfig.ts file containing the project's API keys is included in this repository. This allows the project to be run immediately after cloning and installing dependencies without any manual setup.
+
+    ⚠️ IMPORTANT: This is not standard security practice. In a real-world or production application, API keys and other sensitive credentials should never be committed directly to a Git repository. They should be stored in environment variables or a secure secret management service and the config file should be added to .gitignore.
+
+    The Firebase project linked in the configuration is temporary and will be deleted once the review of this assignment is complete.
+
+4. Run the Application
+
+Start the Metro development server.
+
+npm start
+
+Use the Expo Go app on your phone to scan the QR code displayed in the terminal. The app will build and launch on your device.

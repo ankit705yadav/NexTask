@@ -13,7 +13,7 @@ import {
   Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { db, auth } from "../../firebaseConfig";
+import { db, auth } from "../../firebaseConfig_temp";
 import {
   collection,
   addDoc,

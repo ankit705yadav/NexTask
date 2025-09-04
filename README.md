@@ -8,7 +8,13 @@ The app features **secure user authentication**, **real-time cloud synchronizati
 ---
 
 ## 📱 App Preview
-*(A preview of the main task screen and the "Add Task" modal)*
+![nexTask_gif](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record.gif?raw=true)
+
+![nexTask_1](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_1.png?raw=true)
+![nexTask_2](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_2.png?raw=true)
+![nexTask_3](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_3.png?raw=true)
+![nexTask_4](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_4.png?raw=true)
+![nexTask_5](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_5.png?raw=true)
 
 ---
 

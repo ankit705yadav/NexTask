@@ -8,13 +8,18 @@ The app features **secure user authentication**, **real-time cloud synchronizati
 ---
 
 ## 📱 App Preview
-![nexTask_gif](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record.gif?raw=true)
-
-![nexTask_1](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_1.png?raw=true)
-![nexTask_2](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_2.png?raw=true)
-![nexTask_3](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_3.png?raw=true)
-![nexTask_4](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_4.png?raw=true)
-![nexTask_5](https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_5.png?raw=true)
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/screen-record.gif?raw=true" alt="NexTask App Demo" width="300"/>
+</p>
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_1.png?raw=true" alt="Login Screen" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_2.png?raw=true" alt="Sign up Screen" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_3.png?raw=true" alt="Main Task Screen" width="250"/>
+</p>
+<p align="center">
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_4.png?raw=true" alt="Add Task Modal" width="250"/>
+<img src="https://github.com/ankit705yadav/NexTask/blob/main/screenshots/Screenshot_5.png?raw=true" alt="Edit Task Modal" width="250"/>
+</p>
 
 ---
 

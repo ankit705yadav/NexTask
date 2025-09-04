@@ -1,91 +1,111 @@
-NexTask To-Do App
+# NexTask To-Do App
 
-A React Native To-Do application built for the Nexeed Internship Assignment.
+A **React Native To-Do application** built with **Expo** and **Firebase** for the Nexeed Internship Assignment.
+This complete mobile application allows users to manage their daily tasks with a **clean, modern, and intuitive interface**.
 
-This is a complete mobile application that allows users to manage their daily tasks with a clean, modern, and minimalist dark-themed interface. The app features user authentication and real-time cloud synchronization, ensuring a seamless experience across devices.
-App Preview
-Note:PleaseaddaGIForafewscreenshotsofyourfinalapplicationhere.Thisisagreatwaytoshowcaseyourworkataglance.
-Features
+The app features **secure user authentication**, **real-time cloud synchronization**, and **full offline capabilities**, ensuring a **seamless and reliable user experience**.
 
-This project successfully implements all core requirements and several bonus features from the assignment brief.
-Core Features
+---
 
-    ✅ User Authentication: Secure sign-up and login using email and password.
+## 📱 App Preview
+*(A preview of the main task screen and the "Add Task" modal)*
 
-    ✅ Create Tasks: Easily add new tasks via a simple input.
+---
 
-    ✅ View Tasks: A clean, filterable list of all user-specific tasks.
+## ✨ Features
 
-    ✅ Complete Tasks: Mark tasks as complete with a single tap.
+### **Core Features**
+- ✅ **User Authentication** – Secure sign-up and login with email & password, including client-side validation and specific error handling.
+- ✅ **Create Tasks** – Easily add new tasks with a title and optional details.
+- ✅ **View Tasks** – A clean, filterable list of all user-specific tasks presented in modern UI cards.
+- ✅ **Complete Tasks** – Mark tasks as complete with a single tap.
+- ✅ **Delete Tasks** – Remove tasks permanently with a confirmation dialog.
 
-    ✅ Delete Tasks: Remove tasks permanently.
+### **Bonus & Advanced Features**
+- 🌟 **Real-Time Cloud Sync** – All tasks are synced in real time across devices using Firebase Firestore.
+- 📶 **Offline Support** – Fully functional offline; changes sync automatically when back online.
+- ✏️ **Edit Tasks** – Edit title and details of any existing task via an intuitive modal.
+- 📅 **Due Dates** – Assign an optional due date to tasks.
+- 🔍 **Task Filtering** – Filter list by "All", "Today's", or "Completed" tasks.
+- 🎨 **Modern UI/UX** – Built with `react-native-paper` for smooth animations, Material Design components, and a consistent design.
 
-Bonus Features
+---
 
-    ✅ Cloud Sync with Firestore: All tasks are synced in real-time across devices using a secure Firebase Firestore backend.
+## 🛠 Technology Stack
 
-    ✅ Edit Tasks: An intuitive modal allows users to edit the text of an existing task.
+| Category      | Technology |
+|---------------|------------|
+| Framework     | Expo |
+| UI Library    | React Native Paper |
+| Backend       | Firebase Authentication & Cloud Firestore |
+| State Mgmt    | React Hooks (`useState`, `useEffect`) |
+| Language      | TypeScript |
 
-    ✅ Due Dates: Users can assign an optional due date when creating a task.
+---
 
-    ✅ Task Filtering: The main list can be filtered to show "All", "Today's", or "Completed" tasks.
+## 📌 Technical Choices & Justification
 
-Technical Choices & Justification
+### **Framework: Expo**
+> Chosen for its managed workflow, which speeds up development by abstracting complex native configurations, allowing more focus on features & UX.
 
-This project was built with a focus on modern, efficient, and scalable technologies.
+### **UI Library: React Native Paper**
+> Offers a rich set of pre-built, themeable components that follow Material Design principles, ensuring a polished and intuitive user interface.
 
-    Framework: Expo CLI
+### **Backend & Database: Firebase**
+> Perfect for **real-time sync**, offline persistence, and secure authentication without heavy backend setup.
 
-        Why? I chose Expo's managed workflow to accelerate the initial setup and build process. It abstracts away complex native configurations, allowing for a stronger focus on feature development and UI/UX. The inclusion of Expo Router provided a modern, file-based routing system that is intuitive and easy to manage.
+### **State Management: React Hooks**
+> Simple and efficient for this app’s scale, keeping the codebase clean and performant.
 
-    Backend & Database: Firebase (Authentication & Firestore)
+---
 
-        Why? Firebase was the ideal choice for a backend-as-a-service. Its seamless integration with React Native for both Authentication and a real-time Firestore database met the "Cloud Sync" requirement perfectly. The onSnapshot listener in Firestore provides an excellent real-time user experience out of the box, and the security rules ensure that user data is properly protected.
+## ⚡ Setup and Run Instructions
 
-    UI/UX: Minimalist Dark Theme
+### **Prerequisites**
+- [Node.js (LTS)](https://nodejs.org/en/)
+- [Expo Go](https://expo.dev/client) app installed on your iOS or Android device
 
-        Why? To create a polished and user-friendly interface, I implemented a minimalist dark theme. This design choice reduces eye strain, improves focus on content, and provides a modern, professional aesthetic. The use of a simple color palette with a clear accent color for interactive elements creates an intuitive and pleasant user experience.
+### **1. Clone the Repository**
+```bash
+git https://github.com/ankit705yadav/NexTask
+cd NexTask
+````
 
-    State Management: React Hooks (useState, useEffect)
+### **2. Install Dependencies**
 
-        Why? For an application of this scale, React's built-in hooks are both sufficient and highly efficient. Using useState for local component state and useEffect to manage side effects (like the real-time Firestore listener) keeps the codebase clean, readable, and free of unnecessary boilerplate from larger state management libraries like Redux.
-
-Setup and Run Instructions
-
-Follow these steps to get the project running on your local machine.
-Prerequisites
-
-    Node.js (LTS version)
-
-    Expo CLI: npm install -g expo-cli
-
-    Expo Go App: Installed on your iOS or Android device.
-
-1. Clone the Repository
-
-git clone [YOUR_REPOSITORY_URL]
-cd nex-task-app
-
-2. Install Dependencies
-
+```bash
 npm install
+```
 
-3. Firebase Configuration
+### **3. Firebase Configuration**
 
-For convenience during the review process, the Firebase configuration file (firebaseConfig.ts) is included in this repository. You can skip the manual setup and proceed directly to running the application.
+A `firebaseConfig_temp.js` file with API keys is included for convenience in the review process.
 
-A Note on Security and Configuration
+> ⚠️ **Note:** This is not secure for production. In a real app, API keys should be stored in environment variables and excluded from version control.
 
-    For the convenience of the assignment review process, the firebaseConfig.ts file containing the project's API keys is included in this repository. This allows the project to be run immediately after cloning and installing dependencies without any manual setup.
+The linked Firebase project is **temporary** and will be deleted after the review.
 
-    ⚠️ IMPORTANT: This is not standard security practice. In a real-world or production application, API keys and other sensitive credentials should never be committed directly to a Git repository. They should be stored in environment variables or a secure secret management service and the config file should be added to .gitignore.
+### **4. Run the Application**
 
-    The Firebase project linked in the configuration is temporary and will be deleted once the review of this assignment is complete.
+```bash
+npx run start
+```
 
-4. Run the Application
+* Scan the QR code using the **Expo Go** app.
+* The app will launch on your device.
 
-Start the Metro development server.
+---
 
-npm start
+## 🔒 Security Notice
 
-Use the Expo Go app on your phone to scan the QR code displayed in the terminal. The app will build and launch on your device.
+This project contains a **temporary** Firebase configuration for ease of review. In production:
+
+* Store keys in a `.env` file
+* Add config files to `.gitignore`
+* Use Firebase Security Rules to protect data
+
+---
+
+## 📄 License
+
+This project was built as part of the **Nexeed Internship Assignment** and is for educational/review purposes only.

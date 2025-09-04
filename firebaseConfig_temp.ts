@@ -1,7 +1,7 @@
 // The Firebase project linked in the configuration is temporary and will be deleted once the review of this assignment is complete.
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Firebase web app's configuration
@@ -16,7 +16,6 @@ const firebaseConfig = {
 
 // Initialize Firebase App
 let app;
-// This check prevents re-initializing the app on hot reloads
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 } else {
@@ -28,8 +27,10 @@ const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
 
-// Initialize Firestore
-const db = getFirestore(app);
+// Initialize Firestore with persistence enabled from the start.
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({}),
+});
 
 // Export the initialized services
 export { auth, db };
